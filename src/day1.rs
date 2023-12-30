@@ -2,7 +2,6 @@ use std::fs::File;
 use thiserror::Error;
 use std::io::{BufRead, BufReader};
 
-
 #[derive(Error, Debug)]
 enum ParseLineError{
     #[error("No digits were found")]
@@ -30,16 +29,25 @@ const NUMBERS : [&str; 9] = [
 ];
 
 fn parse_line(value: &str) -> Result<u32, ParseLineError>{
-    let first_byte = value
-        .find(|c:char| c.is_ascii_digit())
-        .ok_or(ParseLineError::NotEnoughDigits)?;
-    let last_byte = value
-        .rfind(|c:char| c.is_ascii_digit())
-        .ok_or(ParseLineError::NotEnoughDigits)?;
+    // Find all symbols in the line
+    let symbols = value.char_indices().filter_map(|(index, char)|{
+        if char.is_ascii_digit(){
+            return Some(char.to_digit(10).unwrap());
+        }
 
-    let first_value = value[first_byte..].chars().next().unwrap().to_digit(10).unwrap();
-    let last_value= value[last_byte..].chars().next().unwrap().to_digit(10).unwrap();
-    Ok(first_value * 10 + last_value)
+        let remaining_value= &value[index..];
+        for (index, word) in NUMBERS.iter().enumerate(){
+            if remaining_value.starts_with(word){
+                return Some(index as u32 + 1);
+            }
+        }
+
+        None
+    });
+
+    let first = symbols.clone().next().ok_or(ParseLineError::NotEnoughDigits)?;
+    let last = symbols.clone().last().ok_or(ParseLineError::NotEnoughDigits)?;
+    Ok(first * 10 + last)
 }
 
 fn parse_calibration_document<R: BufRead>(input: R)-> Result<u32, Error>{
@@ -74,6 +82,11 @@ mod tests{
     }
 
     #[test]
+    fn test_single_line_spelled(){
+        assert_eq!(parse_line("two1nine").unwrap(), 29);
+    }
+
+    #[test]
     fn test_result(){
         const SAMPLE_INPUT : &[u8]= "1abc2
                                      pqr3stu8vwx
@@ -82,5 +95,18 @@ mod tests{
 
         let output = parse_calibration_document(SAMPLE_INPUT).unwrap();
         assert_eq!(output, 142);
+    }
+
+    #[test]
+    fn test_list_with_spelled(){
+        const SAMPLE_INPUT : &[u8] = "two1nine
+                                      eightwothree
+                                      abcone2threexyz
+                                      xtwone3four
+                                      4nineeightseven2
+                                      zoneight234
+                                      7pqrstsixteen".as_bytes();
+        let output = parse_calibration_document(SAMPLE_INPUT).unwrap();
+        assert_eq!(output, 281);
     }
 }
