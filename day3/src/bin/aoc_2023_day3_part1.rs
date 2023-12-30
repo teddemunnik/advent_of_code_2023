@@ -8,7 +8,7 @@ struct EngineSchematic{
 }
 
 #[derive(Clone, Copy, Eq, PartialEq, Debug)]
-struct Test{
+struct Number{
     value: u32,
     row: usize,
     start_column: usize,
@@ -25,7 +25,7 @@ fn read_schematic<R : std::io::BufRead>(reader: R) -> Result<EngineSchematic, st
     rows.map(|rows| EngineSchematic{ rows })
 }
 
-fn commit_number(schematic: &EngineSchematic, numbers: &mut Vec<Test>, pending: &mut Option<Test>, current_x: usize){
+fn commit_number(schematic: &EngineSchematic, numbers: &mut Vec<Number>, pending: &mut Option<Number>, current_x: usize){
     if let Some(number) = pending.as_mut(){
         number.end_column = current_x;
         number.value = std::str::from_utf8(&schematic.rows[number.row][number.start_column..number.end_column]).unwrap().parse::<u32>().unwrap();
@@ -34,16 +34,16 @@ fn commit_number(schematic: &EngineSchematic, numbers: &mut Vec<Test>, pending: 
     }
 }
 
-fn find_numbers(schematic: &EngineSchematic) -> Vec<Test>{
+fn find_numbers(schematic: &EngineSchematic) -> Vec<Number>{
     let mut result = Vec::new();
 
     for y in 0..schematic.rows.len(){
-        let mut current_number :Option<Test> =  None;
+        let mut current_number :Option<Number> =  None;
 
         for x in 0..schematic.rows[y].len(){
             // Start new number range
             if schematic.rows[y][x].is_ascii_digit() && current_number.is_none(){
-                current_number = Some(Test { value: 0, row: y, start_column: x, end_column: x });
+                current_number = Some(Number { value: 0, row: y, start_column: x, end_column: x });
             }
             if !schematic.rows[y][x].is_ascii_digit(){
                 commit_number(schematic, &mut result, &mut current_number, x);
@@ -61,7 +61,7 @@ fn is_symbol(schematic: &EngineSchematic, x: usize, y: usize) -> bool{
     !value.is_ascii_digit() && value != b'.'
 }
 
-fn test_adjacent_row(schematic: &EngineSchematic, number: &Test, y: usize) -> bool{
+fn test_adjacent_row(schematic: &EngineSchematic, number: &Number, y: usize) -> bool{
     let adjacent_x_start = ((number.start_column as isize) - 1).max(0) as usize;
     let adjacent_x_end = (number.end_column + 1).min(schematic.rows[y].len());
     for x in adjacent_x_start..adjacent_x_end{
@@ -73,7 +73,7 @@ fn test_adjacent_row(schematic: &EngineSchematic, number: &Test, y: usize) -> bo
     false
 }
 
-fn is_part(schematic: &EngineSchematic, number: &Test) -> bool{
+fn is_part(schematic: &EngineSchematic, number: &Number) -> bool{
 
     let mut any_symbol = false;
 
@@ -126,7 +126,7 @@ fn main() {
 
 #[cfg(test)]
 mod tests{
-    use crate::{read_schematic, sum_parts, find_numbers, Test};
+    use crate::{read_schematic, sum_parts, find_numbers, Number};
     use indoc::indoc;
 
     #[test]
@@ -140,10 +140,10 @@ mod tests{
         let schematic = read_schematic(INPUT).unwrap();
         let numbers = find_numbers(&schematic);
         assert_eq!(numbers, [
-            Test{ row: 0, start_column: 0, end_column: 3, value: 467 },
-            Test{ row: 0, start_column: 5, end_column: 8, value: 114 },
-            Test{ row: 2, start_column: 2, end_column: 4, value: 35 },
-            Test{ row: 2, start_column: 6, end_column: 9, value: 633 },
+            Number{ row: 0, start_column: 0, end_column: 3, value: 467 },
+            Number{ row: 0, start_column: 5, end_column: 8, value: 114 },
+            Number{ row: 2, start_column: 2, end_column: 4, value: 35 },
+            Number{ row: 2, start_column: 6, end_column: 9, value: 633 },
         ]);
     }
 
