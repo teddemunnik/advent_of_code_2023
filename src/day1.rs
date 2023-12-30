@@ -60,7 +60,7 @@ fn parse_calibration_document<R: BufRead>(input: R)-> Result<u32, Error>{
 }
 
 fn main() {
-    let result = match File::open("input.txt") {
+    let result = match File::open("input_day1.txt") {
         Ok(file) => Ok(BufReader::new(file)),
         Err(e) => Err(Error::FailedToOpenInputFile { inner: e }),
     }.and_then(parse_calibration_document);
