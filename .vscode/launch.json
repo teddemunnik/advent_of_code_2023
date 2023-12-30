@@ -38,11 +38,11 @@
             "console": "externalTerminal"
         },
         {
-            "name": "Day 3",
+            "name": "Day 3 Part 1",
             "type": "cppvsdbg",
             "request": "launch",
             "program": "cargo", 
-            "args": [ "run", "--package", "aoc_2023_day3", "--bin", "aoc_2023_day3" ],
+            "args": [ "run", "--package", "aoc_2023_day3", "--bin", "aoc_2023_day3_part1" ],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}/day3",
             "environment": [],
