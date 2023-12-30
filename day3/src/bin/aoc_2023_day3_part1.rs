@@ -1,16 +1,11 @@
-use std::{io::{BufReader, BufWriter}, thread::current, fs::File};
-use aoc_2023_day3::{read_input, find_numbers, is_part, EngineSchematic};
-use indoc::indoc;
-
+use aoc_2023_day3::{read_input, EngineSchematic, find_part_numbers};
 
 fn sum_parts(schematic: &EngineSchematic) -> u32{
-    find_numbers(schematic)
+    find_part_numbers(schematic)
         .iter()
-        .filter(|number| is_part(schematic, number))
         .map(|number| number.value)
         .sum()
 }
-
 
 fn main() {
     let result = read_input().map(|schematic| sum_parts(&schematic));

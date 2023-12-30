@@ -73,7 +73,7 @@ fn test_adjacent_row(schematic: &EngineSchematic, number: &Number, y: usize) -> 
     false
 }
 
-pub fn is_part(schematic: &EngineSchematic, number: &Number) -> bool{
+fn is_part(schematic: &EngineSchematic, number: &Number) -> bool{
 
     let mut any_symbol = false;
 
@@ -99,6 +99,10 @@ pub fn is_part(schematic: &EngineSchematic, number: &Number) -> bool{
 
     any_symbol
 
+}
+
+pub fn find_part_numbers(schematic: &EngineSchematic) -> Vec<Number>{
+    find_numbers(schematic).into_iter().filter(|number| is_part(schematic, number)).collect()
 }
 
 pub fn read_input() -> Result<EngineSchematic, std::io::Error>{
