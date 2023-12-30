@@ -1,6 +1,4 @@
-use std::fs::File;
-use std::io::BufReader;
-use aoc_2023_day2::{Game, ParseGameError, DiceCount, has_enough_dice, parse_games};
+use aoc_2023_day2::{Game, DiceCount, has_enough_dice, read_input};
 
 fn add_possible_games(games: &[Game], available_dice: &DiceCount) -> u32{
     let possible_games = games.iter().filter(|game| game.records.iter().all(|roll| has_enough_dice(available_dice, roll)));
@@ -14,12 +12,7 @@ fn main(){
         blue: 14
     };
 
-    let result = File::open("input_day2.txt")
-        .map_err(|e| ParseGameError::FailedToOpenInputFile {inner: e})
-        .map(|file| BufReader::new(file))
-        .and_then(|file| parse_games(file))
-        .map(|games| add_possible_games(&games, &available_dice));
-
+    let result = read_input().map(|games| add_possible_games(&games, &available_dice));
     match result{
         Ok(result) => println!("Result: {}", result),
         Err(e) => println!("Error: {}", e),
@@ -28,6 +21,8 @@ fn main(){
 
 #[cfg(test)]
 mod tests{
+    use aoc_2023_day2::parse_games;
+
     use super::*;
 
     #[test]

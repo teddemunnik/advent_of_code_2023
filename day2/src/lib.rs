@@ -1,9 +1,9 @@
-use std::io::BufRead;
+use std::{io::{BufRead, BufReader}, fs::File};
 use thiserror::Error;
 use lazy_static::lazy_static;
 use regex::Regex;
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub struct DiceCount{
     pub red: u32,
     pub green: u32,
@@ -23,7 +23,7 @@ pub enum ParseGameError{
     Any
 }
 
-pub fn parse_roll(roll: &str) -> DiceCount{
+fn parse_roll(roll: &str) -> DiceCount{
     let mut record = DiceCount{
         red: 0,
         green: 0,
@@ -54,7 +54,7 @@ pub fn parse_roll(roll: &str) -> DiceCount{
     record
 }
 
-fn parse_game(line: &str) -> Result<Game, ParseGameError>{
+pub fn parse_game(line: &str) -> Result<Game, ParseGameError>{
     lazy_static!{
         static ref RE: Regex = Regex::new(r"Game (\d+): (.*)").unwrap();
     }
@@ -74,6 +74,13 @@ pub fn has_enough_dice(available_dice: &DiceCount, roll: &DiceCount) -> bool{
     roll.red <= available_dice.red &&
         roll.green <= available_dice.green &&
         roll.blue <= available_dice.blue
+}
+
+pub fn read_input() -> Result<Vec<Game>, ParseGameError>{
+  File::open("input_day2.txt")
+        .map_err(|e| ParseGameError::FailedToOpenInputFile {inner: e})
+        .map(|file| BufReader::new(file))
+        .and_then(|file| parse_games(file))
 }
 
 #[cfg(test)]

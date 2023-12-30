@@ -26,5 +26,16 @@
             "environment": [],
             "console": "externalTerminal"
         },
+        {
+            "name": "Day 2 Part 2",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "cargo", 
+            "args": [ "run", "--package", "aoc_2023_day2", "--bin", "aoc_2023_day2_part2" ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceRoot}/day2",
+            "environment": [],
+            "console": "externalTerminal"
+        },
     ]
 }
