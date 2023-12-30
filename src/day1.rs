@@ -1,6 +1,7 @@
 use std::fs::File;
 use thiserror::Error;
 use std::io::{BufRead, BufReader};
+mod day2;
 
 #[derive(Error, Debug)]
 enum ParseLineError{
