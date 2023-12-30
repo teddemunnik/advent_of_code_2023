@@ -29,7 +29,7 @@ const NUMBERS : [&str; 9] = [
     "nine",
 ];
 
-fn parse_line(value: &String) -> Result<u32, ParseLineError>{
+fn parse_line(value: &str) -> Result<u32, ParseLineError>{
     let first_byte = value
         .find(|c:char| c.is_ascii_digit())
         .ok_or(ParseLineError::NotEnoughDigits)?;
@@ -69,8 +69,8 @@ mod tests{
 
     #[test]
     fn test_single_line(){
-        let sample_input = String::from("pqr3stu8vwx");
-        assert_eq!(parse_line(&sample_input).unwrap(), 38);
+        const SAMPLE_INPUT : &str= "pqr3stu8vwx";
+        assert_eq!(parse_line(SAMPLE_INPUT).unwrap(), 38);
     }
 
     #[test]
