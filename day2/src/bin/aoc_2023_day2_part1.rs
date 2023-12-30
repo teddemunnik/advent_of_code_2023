@@ -12,11 +12,7 @@ fn main(){
         blue: 14
     };
 
-    let result = read_input().map(|games| add_possible_games(&games, &available_dice));
-    match result{
-        Ok(result) => println!("Result: {}", result),
-        Err(e) => println!("Error: {}", e),
-    }
+    aoc_2023_shared::run(read_input().map(|games| add_possible_games(&games, &available_dice)));
 }
 
 #[cfg(test)]

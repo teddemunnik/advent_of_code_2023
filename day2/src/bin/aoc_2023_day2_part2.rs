@@ -15,13 +15,7 @@ fn calculate_power(game: &Game) -> u32{
 }
 
 fn main(){
-    let result = read_input()
-    .map(|games| games.iter().map(calculate_power).sum::<u32>());
-
-    match result{
-        Ok(result) => println!("Result: {}", result),
-        Err(e) => println!("Error: {}", e),
-    }
+    aoc_2023_shared::run(read_input().map(|games| games.iter().map(calculate_power).sum::<u32>()));
 }
 
 #[cfg(test)]

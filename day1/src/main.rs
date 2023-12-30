@@ -60,15 +60,11 @@ fn parse_calibration_document<R: BufRead>(input: R)-> Result<u32, Error>{
 }
 
 fn main() {
-    let result = match File::open("input_day1.txt") {
-        Ok(file) => Ok(BufReader::new(file)),
-        Err(e) => Err(Error::FailedToOpenInputFile { inner: e }),
-    }.and_then(parse_calibration_document);
-
-    match result{
-        Ok(result) => println!("Result: {}", result),
-        Err(e) => println!("Error occurred: {}", e),
-    }
+    aoc_2023_shared::run(
+    File::open("input_day1.txt")
+            .map_err(|e| Error::FailedToOpenInputFile {inner: e})
+            .map(|file| BufReader::new(file))
+            .and_then(|file| parse_calibration_document(file)));
 }
 
 #[cfg(test)]

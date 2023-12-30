@@ -8,11 +8,7 @@ fn sum_parts(schematic: &EngineSchematic) -> u32{
 }
 
 fn main() {
-    let result = read_input().map(|schematic| sum_parts(&schematic));
-    match result{
-        Ok(result) => println!("Result: {}", result),
-        Err(e) => println!("Error: {}", e),
-    }
+    aoc_2023_shared::run(read_input().map(|schematic| sum_parts(&schematic)));
 }
 
 #[cfg(test)]

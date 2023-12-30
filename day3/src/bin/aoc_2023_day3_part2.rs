@@ -46,11 +46,7 @@ fn find_sum_gear_ratios(schematic: &EngineSchematic) -> u32{
 
 
 fn main(){
-    let result = read_input().map(|schematic| find_sum_gear_ratios(&schematic));
-    match result{
-        Ok(result) => println!("Result: {}", result),
-        Err(e) => println!("Error: {}", e),
-    }
+    aoc_2023_shared::run(read_input().map(|schematic| find_sum_gear_ratios(&schematic)));
 }
 
 #[cfg(test)]
