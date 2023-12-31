@@ -1,46 +1,5 @@
-use std::{fs::File, io::{BufReader}};
+use aoc_2023_day4::{parse_card, card_score, read_input};
 
-use lazy_static::lazy_static;
-use regex::Regex;
-
-
-
-#[derive(Debug, PartialEq, Eq)]
-struct Card{
-    id: u32,
-    winning: Vec<u8>,
-    have: Vec<u8>
-}
-
-fn parse_number_list(list: &str) -> Vec<u8>{
-    list.split_ascii_whitespace().map(|number| number.parse::<u8>().unwrap()).collect()
-}
-
-fn parse_card(line: &str) -> Card{
-    lazy_static!{
-        static ref RE: Regex = Regex::new(r"Card +(\d+): (.*) \| (.*)").unwrap();
-    }
-
-    let captures = RE.captures(line).unwrap();
-    let id = captures[1].parse::<u32>().unwrap();
-    let winning = parse_number_list(&captures[2]);
-    let have = parse_number_list(&captures[3]);
-    Card{
-        id,
-        winning,
-        have
-    }
-}
-
-fn card_score(card: &Card) -> u32{
-    let count = card.have.iter().filter(|value| card.winning.contains(&value)).count();
-    if count > 0{
-        1 << (count as u32 - 1)
-    }
-    else{
-        0
-    }
-}
 
 fn calculate_total_score<R: std::io::BufRead>(reader: R) -> u32{
     reader
@@ -50,12 +9,6 @@ fn calculate_total_score<R: std::io::BufRead>(reader: R) -> u32{
         .sum()
 }
 
-fn read_input() -> Result<impl std::io::BufRead, std::io::Error>{
-    File::open("input_day4.txt")
-        .map(|file| BufReader::new(file))
-}
-
-
 fn main() {
     aoc_2023_shared::run(read_input()
         .map(|file| calculate_total_score(file)));
@@ -64,7 +17,8 @@ fn main() {
 #[cfg(test)]
 mod tests{
     use indoc::indoc;
-    use crate::{parse_card, Card, calculate_total_score};
+    use crate::{parse_card, calculate_total_score};
+    use aoc_2023_day4::Card;
 
     #[test]
     fn test_parse_card(){
