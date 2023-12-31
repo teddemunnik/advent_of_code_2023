@@ -60,12 +60,11 @@
             "console": "externalTerminal"
         },
         {
-            "name": "Day 4",
+            "name": "Day 4 Part 1",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceRoot}/target/debug/aoc_2023_day4.exe",
-            "args": [],
-            "preLaunchTask": "rust: cargo build",
+            "program": "cargo", 
+            "args": [ "run", "--package", "aoc_2023_day4", "--bin", "aoc_2023_day4_part1" ],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}/day4",
             "environment": [],
