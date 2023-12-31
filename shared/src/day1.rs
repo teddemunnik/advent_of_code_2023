@@ -1,6 +1,6 @@
-use std::fs::File;
 use thiserror::Error;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead};
+
 
 #[derive(Error, Debug)]
 enum ParseLineError{
@@ -59,17 +59,15 @@ fn parse_calibration_document<R: BufRead>(input: R)-> Result<u32, Error>{
         .try_fold(0, |acc, value| Ok(acc + value?))?)
 }
 
-fn main() {
-    aoc_2023_shared::run(
-    File::open("input_day1.txt")
-            .map_err(|e| Error::FailedToOpenInputFile {inner: e})
-            .map(|file| BufReader::new(file))
-            .and_then(|file| parse_calibration_document(file)));
+
+#[aoc_2023_markup::aoc_task(2023, 1, 1)]
+fn part1(reader: &mut dyn BufRead){
+    crate::run(parse_calibration_document(reader));
 }
 
 #[cfg(test)]
 mod tests{
-    use crate::{parse_calibration_document, parse_line};
+    use super::*;
 
     #[test]
     fn test_single_line(){
