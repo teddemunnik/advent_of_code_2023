@@ -40,6 +40,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "aoc_2023_day4"
+version = "0.1.0"
+dependencies = [
+ "aoc_2023_shared",
+ "indoc",
+ "lazy_static",
+ "regex",
+]
+
+[[package]]
 name = "aoc_2023_shared"
 version = "0.1.0"
 

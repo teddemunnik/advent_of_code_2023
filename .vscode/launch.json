@@ -59,5 +59,17 @@
             "environment": [],
             "console": "externalTerminal"
         },
+        {
+            "name": "Day 4",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceRoot}/target/debug/aoc_2023_day4.exe",
+            "args": [],
+            "preLaunchTask": "rust: cargo build",
+            "stopAtEntry": false,
+            "cwd": "${workspaceRoot}/day4",
+            "environment": [],
+            "console": "externalTerminal"
+        },
     ]
 }
