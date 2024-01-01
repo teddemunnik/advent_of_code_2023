@@ -130,12 +130,9 @@ fn parse_seed_mapping<R: std::io::BufRead>(input: R) -> Option<SeedMappings>{
 
 fn parse_seed_range_mappings<R: std::io::BufRead>(input: R) -> Option<SeedRangeMappings>{
     let mut lines = input.lines();
-
-    let seed_ranges = lines
-        .next()?
-        .ok()?
-        .split(':')
-        .nth(1)?
+    let first_line = lines.next()?.ok()?;
+    let seed_ranges_string = first_line.split(':').nth(1)?;
+    let seed_ranges = seed_ranges_string
         .split_ascii_whitespace()
         .chunks(2)
         .into_iter()
