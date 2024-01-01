@@ -6,6 +6,7 @@ mod day1;
 mod day2;
 mod day3;
 mod day4;
+mod day5;
 
 pub trait AocTask{
     fn year(&self) -> u32;
@@ -27,6 +28,15 @@ impl<T: std::fmt::Display, E: std::fmt::Display> AocResult for Result<T, E>{
         match self{
             Ok(value) => writeln!(write, "Result: {}", value),
             Err(error) => writeln!(write, "Error: {}", error),
+        }
+    }
+}
+
+impl<T: std::fmt::Display> AocResult for Option<T>{
+    fn write(&self, write: &mut dyn std::io::Write) -> std::io::Result<()>{
+        match self{
+            Some(value) => writeln!(write, "Result: {}", value),
+            None => writeln!(write, "Error"),
         }
     }
 }
