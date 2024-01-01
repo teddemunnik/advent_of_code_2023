@@ -25,12 +25,12 @@
 
 #[derive(Debug, PartialEq, Eq)]
 struct Entry{
-    time: u32,
-    distance: u32,
+    time: usize,
+    distance: usize,
 }
 
-fn parse_row(input: &str) -> Option<Vec<u32>>{
-    input.split_ascii_whitespace().skip(1).map(|item| item.parse::<u32>().ok()).collect()
+fn parse_row(input: &str) -> Option<Vec<usize>>{
+    input.split_ascii_whitespace().skip(1).map(|item| item.parse::<usize>().ok()).collect()
 }
 
 fn parse_table<R: std::io::BufRead>(input: R) -> Option<Vec<Entry>>{
@@ -56,7 +56,21 @@ fn parse_table<R: std::io::BufRead>(input: R) -> Option<Vec<Entry>>{
     Some(result)
 }
 
-fn num_beating(entry: &Entry) -> u32{
+fn parse_row_no_kerning(input: &str) -> Option<usize>{
+    let number : String = input.split(':').nth(1)?.chars().filter(|char| !char.is_whitespace()).collect();
+    number.parse::<usize>().ok()
+}
+
+fn parse_table_no_kerning<R: std::io::BufRead>(input: R) -> Option<Entry>{
+    let mut lines = input.lines();
+    let time_line = lines.next()?.ok()?;
+    let distance_line = lines.next()?.ok()?;
+    let time = parse_row_no_kerning(&time_line)?;
+    let distance = parse_row_no_kerning(&distance_line)?;
+    Some(Entry { time, distance})
+}
+
+fn num_beating(entry: &Entry) -> usize{
     let time = entry.time as f64;
     let distance = entry.distance as f64;
     let b = ((time * time) - 4.0 * distance).sqrt();
@@ -64,13 +78,19 @@ fn num_beating(entry: &Entry) -> u32{
     let b = (-time - b) / -2.0;
     let one = (a + 1.0).floor();
     let two = b.ceil();
-    (two - one).floor() as u32
+    (two - one).floor() as usize
 }
 
 #[aoc_2023_markup::aoc_task(2023, 6, 1)]
-fn multiply_ways_to_win<R: std::io::BufRead>(input: R) -> Option<u32>{
+fn multiply_ways_to_win<R: std::io::BufRead>(input: R) -> Option<usize>{
     let table = parse_table(input)?;
     table.iter().map(|entry| num_beating(entry)).reduce(|a, b| a * b)
+}
+
+#[aoc_2023_markup::aoc_task(2023, 6, 2)]
+fn ways_to_win_no_kerning<R: std::io::BufRead>(input: R) -> Option<usize>{
+    let table = parse_table_no_kerning(input)?;
+    Some(num_beating(&table))
 }
 
 #[cfg(test)]
@@ -95,9 +115,18 @@ mod tests{
     }
 
     #[test]
+    fn test_parse_table_no_kerning(){
+        let table = parse_table_no_kerning(INPUT).unwrap();
+        assert_eq!(table, Entry{
+            time: 71530,
+            distance: 940200
+        });
+    }
+
+    #[test]
     fn test_num_beating(){
         let table = parse_table(INPUT).unwrap();
-        let test : Vec<u32> = table.iter().map(|entry| num_beating(entry)).collect();
+        let test : Vec<usize> = table.iter().map(|entry| num_beating(entry)).collect();
         assert_eq!(test, [ 4, 8, 9 ]);
     }
 
@@ -105,6 +134,12 @@ mod tests{
     fn test_multiply_ways_to_win(){
         let result = multiply_ways_to_win(INPUT).unwrap();
         assert_eq!(result, 288);
+    }
+
+    #[test]
+    fn test_ways_to_win_no_kerning(){
+        let ways_to_win = ways_to_win_no_kerning(INPUT).unwrap();
+        assert_eq!(ways_to_win, 71503);
     }
 
 }
