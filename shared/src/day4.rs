@@ -10,24 +10,43 @@ struct Card{
     have: Vec<u8>
 }
 
-fn parse_number_list(list: &str) -> Vec<u8>{
-    list.split_ascii_whitespace().map(|number| number.parse::<u8>().unwrap()).collect()
+#[derive(Debug)]
+struct ParseCardsError{
+    line: usize,
 }
 
-fn parse_card(line: &str) -> Card{
+impl std::fmt::Display for ParseCardsError{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result{
+        write!(f, "failed to parse card on line {}", self.line)
+    }
+} 
+
+fn parse_number_list(list: &str) -> Option<Vec<u8>>{
+    list.split_ascii_whitespace().map(|number| number.parse::<u8>().ok()).collect()
+}
+
+fn parse_card(line: &str) -> Option<Card>{
     lazy_static!{
         static ref RE: Regex = Regex::new(r"Card +(\d+): (.*) \| (.*)").unwrap();
     }
 
-    let captures = RE.captures(line).unwrap();
-    let id = captures[1].parse::<u32>().unwrap();
-    let winning = parse_number_list(&captures[2]);
-    let have = parse_number_list(&captures[3]);
-    Card{
+    let captures = RE.captures(line)?;
+    let id = captures[1].parse::<u32>().ok()?;
+    let winning = parse_number_list(&captures[2])?;
+    let have = parse_number_list(&captures[3])?;
+    Some(Card{
         id,
         winning,
         have
-    }
+    })
+}
+
+fn parse_cards<R: std::io::BufRead>(input: R) -> Result<Vec<Card>, ParseCardsError>{
+   input 
+        .lines()
+        .enumerate()
+        .map(|(line_index, line)| line.ok().and_then(|line| parse_card(&line)).ok_or(ParseCardsError{ line: line_index }))
+        .collect()
 }
 
 fn card_matches(card: &Card) -> usize{
@@ -44,21 +63,15 @@ fn card_score(card: &Card) -> u32{
     }
 }
 
-fn calculate_total_score<R: std::io::BufRead>(reader: R) -> u32{
-    reader
-        .lines()
-        .map(|line| parse_card(&line.unwrap()))
-        .map(|card| card_score(&card))
-        .sum()
-}
-
 #[aoc_2023_markup::aoc_task(2023, 4, 1)]
-fn part1(input: &mut dyn BufRead) -> u32{
-    calculate_total_score(input)
+fn calculate_total_score(input: &mut dyn BufRead) -> Result<u32, ParseCardsError>{
+    parse_cards(input)
+        .map(|cards| cards.iter().map(|card| card_score(&card)).sum())
 }
 
-fn count_scratchcards(input: &mut dyn BufRead) -> usize{
-    let cards : Vec<Card> = input.lines().map(|line| parse_card(&line.unwrap())).collect();
+#[aoc_2023_markup::aoc_task(2023, 4, 2)]
+fn count_scratchcards(input: &mut dyn BufRead) -> Result<usize, ParseCardsError>{
+    let cards = parse_cards(input)?;
     let mut card_counts : Vec<usize> = vec![1; cards.len()];
 
     for card_index in 0..cards.len(){
@@ -72,12 +85,7 @@ fn count_scratchcards(input: &mut dyn BufRead) -> usize{
         }
     }
 
-    card_counts.iter().copied().sum::<usize>()
-}
-
-#[aoc_2023_markup::aoc_task(2023, 4, 2)]
-fn part2(input: &mut dyn BufRead) -> usize{
-    count_scratchcards(input)
+    Ok(card_counts.iter().copied().sum::<usize>())
 }
 
 
@@ -91,7 +99,7 @@ mod tests{
     #[test]
     fn test_parse_card(){
         const INPUT : &str = "Card 1: 41 48 83 86 17 | 83 86  6 31 17  9 48 53";
-        let card = parse_card(INPUT);
+        let card = parse_card(INPUT).unwrap();
         assert_eq!(card, Card{
             id: 1,
             winning: vec![41, 48, 83, 86, 17],
@@ -110,7 +118,7 @@ mod tests{
             Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11
         "}.as_bytes();
 
-        let score = calculate_total_score(INPUT);
+        let score = calculate_total_score(&mut Cursor::new(INPUT)).unwrap();
         assert_eq!(score, 13);
     }
 
@@ -125,7 +133,7 @@ mod tests{
             Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11
         "}.as_bytes();
 
-        let count = count_scratchcards(&mut Cursor::new(INPUT));
+        let count = count_scratchcards(&mut Cursor::new(INPUT)).unwrap();
         assert_eq!(count, 30);
 
     }
