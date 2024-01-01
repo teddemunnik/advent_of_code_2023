@@ -1,27 +1,3 @@
-// v = tHeld
-// tRemain = tTotal - tHeld
-// d = v * tRemain
-
-// d = tHeld * (tTotal - tHeld) - score = 0;
-// d = tHeld * tTotal - tHeld^2
-// abc
-// d = b^2 - 4ac
-// a = -1
-// b = tTotal
-// c = -score
-
-// -tTotal +- sqrt(tTotal^2 - 4score) / 2
-
-// (-b - sqrt(b^2 - 4ac)) / 2a
-
-// tHeld * (tTotal - tHeld) - score = 0
-//-tHeld^2 + tHeld * tTotal - score = 0
-
-//a = -1
-//b = tTotal
-//c = -score
-
-
 
 #[derive(Debug, PartialEq, Eq)]
 struct Entry{
