@@ -7,12 +7,6 @@ struct MappingRange{
     count: usize 
 }
 
-#[derive(PartialEq, Eq, Debug)]
-struct SeedRange{
-    start: usize,
-    count: usize,
-}
-
 impl MappingRange{
     fn try_map(&self, source: usize) -> Option<usize>{
         if source >= self.source_start && source < self.source_start + self.count{
@@ -39,7 +33,7 @@ struct SeedMappings{
 }
 
 struct SeedRangeMappings{
-    seed_ranges: Vec<SeedRange>,
+    seed_ranges: Vec<std::ops::Range<usize>>,
     mappings: Vec<Mapping>
 }
 
@@ -107,9 +101,9 @@ fn parse_seed_range_mappings<R: std::io::BufRead>(input: R) -> Option<SeedRangeM
             let mut range_iter = range;
             let start = range_iter.next()?.parse::<usize>().ok()?;
             let count = range_iter.next()?.parse::<usize>().ok()?;
-            Some(SeedRange{ start, count })
+            Some(start..(start + count))
         })
-        .collect::<Option<Vec<SeedRange>>>()?;
+        .collect::<Option<Vec<std::ops::Range<usize>>>>()?;
 
     let mappings = parse_mappings(&mut lines)?;
     Some(SeedRangeMappings{
@@ -135,7 +129,7 @@ fn lowest_location_with_seed_ranges<R: std::io::BufRead>(input: R) -> Option<usi
 
     let mut seeds = Vec::new();
     for seed_range in mappings.seed_ranges{
-        for seed in seed_range.start..(seed_range.start+seed_range.count){
+        for seed in seed_range{
             seeds.push(seed);
         }
     }
@@ -207,8 +201,8 @@ mod tests{
     fn test_parse_seed_ranges(){
         let mappings = parse_seed_range_mappings(SAMPLE_INPUT).unwrap();
         assert_eq!(mappings.seed_ranges, [
-            SeedRange{ start: 79, count: 14 },
-            SeedRange{ start: 55, count: 13 },
+            79..93,
+            55..68,
         ]);
     }
 
