@@ -81,6 +81,11 @@ fn main(){
 
         let path = format!("inputs/{}/{}.txt", entry.year(), entry.day());
         let mut reader =  File::open(path).map(|file| BufReader::new(file)).unwrap();
+
+        let start = std::time::Instant::now();
         entry.invoke(&mut reader);
+        let end = std::time::Instant::now();
+
+        println!("Took {}mcs", (end - start).as_micros());
     }
 }

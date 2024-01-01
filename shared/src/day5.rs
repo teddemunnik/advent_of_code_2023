@@ -1,6 +1,6 @@
 use itertools::Itertools;
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Clone, Copy)]
 struct MappingRange{
     source_start: usize,
     destination_start: usize,
@@ -15,6 +15,18 @@ impl MappingRange{
             None
         }
     }
+
+    fn try_map_range(&self, range: &std::ops::Range<usize>) -> Option<(std::ops::Range<usize>, std::ops::Range<usize>)>{
+        let max_start = self.source_start.max(range.start);
+        let min_end = (self.source_start + self.count).min(range.end);
+        if min_end > max_start{
+            let destination_start = (max_start - self.source_start) + self.destination_start;
+            let destination_end = destination_start + (min_end - max_start);
+            Some((max_start..min_end, destination_start..destination_end))
+        }else{
+            None
+        }
+    }
 }
 
 struct Mapping{
@@ -24,6 +36,36 @@ struct Mapping{
 impl Mapping{
     fn lookup(&self, value: usize) -> usize{
         self.ranges.iter().filter_map(|range| range.try_map(value)).next().unwrap_or(value)
+    }
+
+    fn lookup_ranges(&self, ranges: &[std::ops::Range<usize>]) -> Vec<std::ops::Range<usize>>{
+        
+        let mut test = self.ranges.clone();
+        test.sort_by(|a, b| a.source_start.cmp(&b.source_start));
+
+        let mut result = Vec::new();
+        for range in ranges.iter(){
+
+            let mut last_end = range.start;
+
+            // Go over all mapped subranges
+            for (source_range, destination_range) in test.iter().filter_map(|map| map.try_map_range(range)){
+                // If there was any space between the last end and the current start, add an identity range
+                if source_range.start > last_end{
+                    result.push(last_end..source_range.start);
+                }
+
+                last_end = source_range.end;
+                result.push(destination_range);
+            }
+
+            // Any remainder at the end
+            if last_end < range.end{
+                result.push(last_end..range.end);
+            }
+        }
+
+        result
     }
 }
 
@@ -126,19 +168,8 @@ fn lowest_location_with_seed<R: std::io::BufRead>(input: R) -> Option<usize>{
 #[aoc_2023_markup::aoc_task(2023, 5, 2)]
 fn lowest_location_with_seed_ranges<R: std::io::BufRead>(input: R) -> Option<usize>{
     let mappings = parse_seed_range_mappings(input)?;
-
-    let mut seeds = Vec::new();
-    for seed_range in mappings.seed_ranges{
-        for seed in seed_range{
-            seeds.push(seed);
-        }
-    }
-
-    let locations = seeds.iter().map(|seed| {
-        mappings.mappings.iter().fold(*seed, |a, b| b.lookup(a))
-    });
-
-    locations.min()
+    let locations : Vec<std::ops::Range<usize>> = mappings.mappings.iter().fold(mappings.seed_ranges, |a, b| b.lookup_ranges(&a));
+    locations.iter().map(|range| range.start).min()
 }
 
 #[cfg(test)]
@@ -221,5 +252,11 @@ mod tests{
     fn test_lowest_location_with_seeds(){
         let lowest_location = lowest_location_with_seed(SAMPLE_INPUT).unwrap();
         assert_eq!(lowest_location, 35);
+    }
+
+    #[test]
+    fn test_lowest_location_with_seed_ranges(){
+        let lowest_location = lowest_location_with_seed_ranges(SAMPLE_INPUT).unwrap();
+        assert_eq!(lowest_location, 46);
     }
 }
