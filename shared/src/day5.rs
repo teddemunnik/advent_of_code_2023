@@ -1,10 +1,16 @@
-use std::thread::current;
+use itertools::Itertools;
 
 #[derive(PartialEq, Eq, Debug)]
 struct MappingRange{
     source_start: usize,
     destination_start: usize,
     count: usize 
+}
+
+#[derive(PartialEq, Eq, Debug)]
+struct SeedRange{
+    start: usize,
+    count: usize,
 }
 
 impl MappingRange{
@@ -32,6 +38,11 @@ struct SeedMappings{
     mappings: Vec<Mapping>
 }
 
+struct SeedRangeMappings{
+    seed_ranges: Vec<SeedRange>,
+    mappings: Vec<Mapping>
+}
+
 fn parse_mapping_line(line: &str) -> Option<MappingRange>{
     let mut split = line.split_ascii_whitespace();
     let destination_start = split.next()?.parse::<usize>().ok()?;
@@ -44,12 +55,7 @@ fn parse_mapping_line(line: &str) -> Option<MappingRange>{
     })
 }
 
-fn parse_seed_mapping<R: std::io::BufRead>(input: R) -> Option<SeedMappings>{
-    let mut lines = input.lines();
-
-    // Parse the seeds list on the first line
-    let seeds = lines.next()?.ok()?.split(':').nth(1)?.split_ascii_whitespace().map(|number| number.parse::<usize>().ok()).collect::<Option<Vec<usize>>>()?;
-
+fn parse_mappings(lines: &mut impl Iterator<Item = std::io::Result<String>>) -> Option<Vec<Mapping>>{
     let mut mappings = Vec::new();
     let mut current_mappings= Vec::new();
 
@@ -73,8 +79,41 @@ fn parse_seed_mapping<R: std::io::BufRead>(input: R) -> Option<SeedMappings>{
         mappings.push(Mapping{ ranges: current_mappings});
     }
 
+    Some(mappings)
+}
+
+fn parse_seed_mapping<R: std::io::BufRead>(input: R) -> Option<SeedMappings>{
+    let mut lines = input.lines();
+    let seeds = lines.next()?.ok()?.split(':').nth(1)?.split_ascii_whitespace().map(|number| number.parse::<usize>().ok()).collect::<Option<Vec<usize>>>()?;
+    let mappings = parse_mappings(&mut lines)?;
     Some(SeedMappings{
         seeds,
+        mappings
+    })
+}
+
+fn parse_seed_range_mappings<R: std::io::BufRead>(input: R) -> Option<SeedRangeMappings>{
+    let mut lines = input.lines();
+
+    let seed_ranges = lines
+        .next()?
+        .ok()?
+        .split(':')
+        .nth(1)?
+        .split_ascii_whitespace()
+        .chunks(2)
+        .into_iter()
+        .map(|range| {
+            let mut range_iter = range;
+            let start = range_iter.next()?.parse::<usize>().ok()?;
+            let count = range_iter.next()?.parse::<usize>().ok()?;
+            Some(SeedRange{ start, count })
+        })
+        .collect::<Option<Vec<SeedRange>>>()?;
+
+    let mappings = parse_mappings(&mut lines)?;
+    Some(SeedRangeMappings{
+        seed_ranges,
         mappings
     })
 }
@@ -84,6 +123,24 @@ fn lowest_location_with_seed<R: std::io::BufRead>(input: R) -> Option<usize>{
     let mappings = parse_seed_mapping(input)?;
 
     let locations = mappings.seeds.iter().map(|seed| {
+        mappings.mappings.iter().fold(*seed, |a, b| b.lookup(a))
+    });
+
+    locations.min()
+}
+
+#[aoc_2023_markup::aoc_task(2023, 5, 2)]
+fn lowest_location_with_seed_ranges<R: std::io::BufRead>(input: R) -> Option<usize>{
+    let mappings = parse_seed_range_mappings(input)?;
+
+    let mut seeds = Vec::new();
+    for seed_range in mappings.seed_ranges{
+        for seed in seed_range.start..(seed_range.start+seed_range.count){
+            seeds.push(seed);
+        }
+    }
+
+    let locations = seeds.iter().map(|seed| {
         mappings.mappings.iter().fold(*seed, |a, b| b.lookup(a))
     });
 
@@ -144,6 +201,15 @@ mod tests{
         assert_eq!(MAPPING.lookup(99), 51);
         assert_eq!(MAPPING.lookup(53), 55);
         assert_eq!(MAPPING.lookup(10), 10);
+    }
+
+    #[test]
+    fn test_parse_seed_ranges(){
+        let mappings = parse_seed_range_mappings(SAMPLE_INPUT).unwrap();
+        assert_eq!(mappings.seed_ranges, [
+            SeedRange{ start: 79, count: 14 },
+            SeedRange{ start: 55, count: 13 },
+        ]);
     }
 
     #[test]

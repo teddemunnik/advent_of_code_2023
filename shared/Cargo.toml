@@ -12,3 +12,4 @@ regex = "1.10"
 lazy_static = "1.4.0"
 aoc_2023_markup = { path = "../markup" }
 indoc = "2.0"
+itertools = "0.12"
