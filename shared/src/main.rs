@@ -1,5 +1,5 @@
 
-use std::{io::{BufRead, Cursor, BufReader}, fs::File};
+use std::{io::{BufRead, Cursor, BufReader}, fs::File, fmt::Display};
 pub use linkme;
 
 mod day1;
@@ -17,11 +17,36 @@ pub trait AocTask{
 #[linkme::distributed_slice]
 pub static AOC_ENTRIES: [&(dyn AocTask + Sync)];
 
-pub fn run<U: std::fmt::Display, E: std::fmt::Display>(input: Result<U, E>){
-    match input{
-        Ok(result) => println!("Result: {}", result),
-        Err(e) => println!("Error: {}", e),
+
+pub trait AocResult{
+    fn write(&self, write: &mut dyn std::io::Write) -> std::io::Result<()>;
+}
+
+impl<T: std::fmt::Display, E: std::fmt::Display> AocResult for Result<T, E>{
+    fn write(&self, write: &mut dyn std::io::Write) -> std::io::Result<()>{
+        match self{
+            Ok(value) => writeln!(write, "Result: {}", value),
+            Err(error) => writeln!(write, "Error: {}", error),
+        }
     }
+}
+
+macro_rules! aoc_result_display {
+    ($name:ident) => {
+        impl AocResult for $name{
+            fn write(&self, write: &mut dyn std::io::Write) -> std::io::Result<()>{
+                writeln!(write, "Result: {}", self)
+            }
+        }
+    };
+}
+
+aoc_result_display!(u32);
+aoc_result_display!(usize);
+
+
+pub fn run<R: AocResult>(input: R){
+    input.write(&mut std::io::stdout());
 }
 
 fn main(){

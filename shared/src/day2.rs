@@ -80,7 +80,7 @@ fn add_possible_games(games: &[Game], available_dice: &DiceCount) -> u32{
 }
 
 #[aoc_2023_markup::aoc_task(2023, 2, 1)]
-fn part1(input: &mut dyn BufRead){
+fn part1(input: &mut dyn BufRead) -> Result<u32, ParseGameError>{
     let input = parse_games(input);
 
     let available_dice = DiceCount{
@@ -89,7 +89,7 @@ fn part1(input: &mut dyn BufRead){
         blue: 14
     };
 
-    crate::run(input.map(|games| add_possible_games(&games, &available_dice)));
+    input.map(|games| add_possible_games(&games, &available_dice))
 }
 
 fn calculate_power(game: &Game) -> u32{
@@ -107,9 +107,9 @@ fn calculate_power(game: &Game) -> u32{
 }
 
 #[aoc_2023_markup::aoc_task(2023, 2, 2)]
-fn part2(input: &mut dyn BufRead){
+fn part2(input: &mut dyn BufRead) -> Result<u32, ParseGameError>{
     let input = parse_games(input);
-    crate::run(input.map(|games| games.iter().map(calculate_power).sum::<u32>()));
+    input.map(|games| games.iter().map(calculate_power).sum::<u32>())
 }
 
 #[cfg(test)]

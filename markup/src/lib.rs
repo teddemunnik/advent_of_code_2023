@@ -62,7 +62,7 @@ pub fn aoc_task(args: TokenStream, input: TokenStream) -> TokenStream{
                 }
 
                 fn invoke(&self, read: &mut dyn std::io::BufRead){
-                    super::#task_function_name(read);
+                    crate::run(super::#task_function_name(read));
                 }
             }
 

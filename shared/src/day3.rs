@@ -109,9 +109,9 @@ fn sum_parts(schematic: &EngineSchematic) -> u32{
 }
 
 #[aoc_2023_markup::aoc_task(2023, 3, 1)]
-fn part1(input: &mut dyn BufRead) {
+fn part1(input: &mut dyn BufRead) -> Result<u32, std::io::Error>{
     let input = read_schematic(input);
-    crate::run(input.map(|schematic| sum_parts(&schematic)));
+    input.map(|schematic| sum_parts(&schematic))
 }
 
 
@@ -160,9 +160,9 @@ fn find_sum_gear_ratios(schematic: &EngineSchematic) -> u32{
 }
 
 #[aoc_2023_markup::aoc_task(2023, 3, 2)]
-fn part2(input: &mut dyn BufRead){
+fn part2(input: &mut dyn BufRead) -> Result<u32, std::io::Error>{
     let input = read_schematic(input);
-    crate::run(input.map(|schematic| find_sum_gear_ratios(&schematic)));
+    input.map(|schematic| find_sum_gear_ratios(&schematic))
 }
 
 #[cfg(test)]

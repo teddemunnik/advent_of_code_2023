@@ -61,8 +61,8 @@ fn parse_calibration_document<R: BufRead>(input: R)-> Result<u32, Error>{
 
 
 #[aoc_2023_markup::aoc_task(2023, 1, 1)]
-fn part1(reader: &mut dyn BufRead){
-    crate::run(parse_calibration_document(reader));
+fn part1(reader: &mut dyn BufRead) -> Result<u32, Error>{
+    parse_calibration_document(reader)
 }
 
 #[cfg(test)]

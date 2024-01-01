@@ -53,12 +53,11 @@ fn calculate_total_score<R: std::io::BufRead>(reader: R) -> u32{
 }
 
 #[aoc_2023_markup::aoc_task(2023, 4, 1)]
-fn part1(input: &mut dyn BufRead) {
-    let result : Result<u32, std::io::Error> = Ok(calculate_total_score(input));
-    crate::run(result);
+fn part1(input: &mut dyn BufRead) -> u32{
+    calculate_total_score(input)
 }
 
-fn count_scratchcards(input: &mut dyn BufRead) -> Result<usize, std::io::Error>{
+fn count_scratchcards(input: &mut dyn BufRead) -> usize{
     let cards : Vec<Card> = input.lines().map(|line| parse_card(&line.unwrap())).collect();
     let mut card_counts : Vec<usize> = vec![1; cards.len()];
 
@@ -73,12 +72,12 @@ fn count_scratchcards(input: &mut dyn BufRead) -> Result<usize, std::io::Error>{
         }
     }
 
-    Ok(card_counts.iter().copied().sum::<usize>())
+    card_counts.iter().copied().sum::<usize>()
 }
 
 #[aoc_2023_markup::aoc_task(2023, 4, 2)]
-fn part2(input: &mut dyn BufRead){
-    crate::run(count_scratchcards(input));
+fn part2(input: &mut dyn BufRead) -> usize{
+    count_scratchcards(input)
 }
 
 
@@ -126,7 +125,7 @@ mod tests{
             Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11
         "}.as_bytes();
 
-        let count = count_scratchcards(&mut Cursor::new(INPUT)).unwrap();
+        let count = count_scratchcards(&mut Cursor::new(INPUT));
         assert_eq!(count, 30);
 
     }
