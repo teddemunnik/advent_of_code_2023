@@ -1,4 +1,4 @@
-use std::{path::Display, fmt::Write, cmp::Ordering};
+use std::{fmt::Write, cmp::Ordering};
 
 use itertools::Itertools;
 use stackvector::StackVec;
@@ -122,7 +122,6 @@ fn classify_hand<const USE_JOKERS: bool>(hand: &Hand) -> HandClassification{
             counts.push((card, 1));
         }
     }
-
 
     // Sort the unique cards by count
     counts.sort_by(|a, b| b.1.cmp(&a.1));
