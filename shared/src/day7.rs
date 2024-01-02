@@ -1,5 +1,6 @@
 use std::{path::Display, fmt::Write, cmp::Ordering};
 
+use itertools::Itertools;
 use stackvector::StackVec;
 
 
@@ -178,25 +179,22 @@ fn parse_bids<R: std::io::BufRead>(input: R) -> Option<Vec<Bid>>{
     input.lines().map(|line| line.ok().and_then(|line| parse_bid(&line))).collect()
 }
 
-fn bid_compare_score(a: &Bid, b: &Bid, use_jokers: bool) -> std::cmp::Ordering{
-    let classification_a = classify_hand(&a.hand, use_jokers);
-    let classification_b = classify_hand(&b.hand, use_jokers);
-    let classification_order = classification_a.cmp(&classification_b);
+fn bid_compare_score(a: &(&Bid, HandClassification), b: &(&Bid, HandClassification), use_jokers: bool) -> std::cmp::Ordering{
+    let classification_order = a.1.cmp(&b.1);
     if classification_order != Ordering::Equal{
         return classification_order;
     }
-
-
-    a.hand.0.map(|card| card_order(card, use_jokers)).cmp(&b.hand.0.map(|card| card_order(card, use_jokers)))
-}
-
-fn order_bids_by_rank(bids: &mut Vec<Bid>, use_jokers: bool){
-    bids.sort_by(|a, b| bid_compare_score(a, b, use_jokers))
+    a.0.hand.0.map(|card| card_order(card, use_jokers)).cmp(&b.0.hand.0.map(|card| card_order(card, use_jokers)))
 }
 
 fn calculate_total_winnings<R: std::io::BufRead>(input: R, use_jokers: bool) -> Option<usize>{
-    let mut bids = parse_bids(input)?;
-    order_bids_by_rank(&mut bids, use_jokers);
+    let bids = parse_bids(input)?;
+
+    let classified_bids : Vec<(&Bid, HandClassification)>= bids.iter()
+        .map(|bid| (bid, classify_hand(&bid.hand, use_jokers)))
+        .sorted_by(|a, b| bid_compare_score(a, b, use_jokers))
+        .collect();
+    
     Some(bids.iter().enumerate().map(|(rank, bid)| bid.bid * (rank + 1)).sum())
 }
 
