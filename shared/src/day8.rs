@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use nom::{
     IResult,
-    character::complete::{alpha1, char, multispace0},
+    character::complete::{alphanumeric1, char, multispace0},
     bytes::complete::take_while,
     branch::alt,
     multi::many1,
@@ -34,11 +34,11 @@ fn parse_commands(input: &str) -> IResult<&str, Vec<Command>>{
 fn parse_node(input: &str) -> IResult<&str, NodeDescription>{
     map(
         tuple((
-            alpha1,
+            alphanumeric1,
             preceded(multispace0, char('=')),
             delimited(
                 preceded(multispace0, char('(')),
-                separated_pair(delimited(multispace0, alpha1, multispace0), char(','), delimited(multispace0, alpha1, multispace0)), 
+                separated_pair(delimited(multispace0, alphanumeric1, multispace0), char(','), delimited(multispace0, alphanumeric1, multispace0)), 
                 terminated(char(')'), multispace0)
             ))
         ), 
@@ -99,34 +99,46 @@ fn parse_map<R: std::io::BufRead>(input: R) -> Option<Map>{
 fn follow_map<R: std::io::BufRead>(input: R) -> Option<usize>{
     let map = parse_map(input)?;
 
-    let mut commands = map.commands.iter().cycle();
-
     let start = NodeId::from("AAA");
     let end = NodeId::from("ZZZ");
 
+    let mut commands = map.commands.iter().cycle().enumerate();
     let mut current = &start;
-    let mut steps = 0;
-
     loop{
-        let command = commands.next()?;
-
-        let next = match command{
-            Command::L => &map.nodes[current].left,
-            Command::R => &map.nodes[current].right
-        };
-
-        steps += 1;
-
-        if *next == end{
-            return Some(steps);
+        let (step, command) = commands.next().unwrap();
+        execute_command(&map, &mut current, command);
+        if *current == end{
+            return Some(step + 1);
         }
-
-        if *next == *current{
-            return None; 
-        }
-
-        current = next;
     }
+}
+
+fn execute_command<'a, 'b>(map: &'a Map, node: &mut &'b NodeId, command: &Command) where 'a : 'b{
+    *node = match command{
+        Command::L => &map.nodes[node].left,
+        Command::R => &map.nodes[node].right
+    };
+}
+
+fn count_steps(map: &Map, start: &NodeId) -> usize{
+    let mut commands = map.commands.iter().cycle().enumerate();
+    let mut current = start;
+    loop{
+        let (step, command) = commands.next().unwrap();
+        execute_command(map, &mut current, command);
+        if current.0.ends_with("Z"){
+            return step + 1;
+        }
+    }
+}
+
+#[aoc_2023_markup::aoc_task(2023, 8, 2)]
+fn follow_map_ghost<R: std::io::BufRead>(input: R) -> Option<usize>{
+    use num::Integer;
+
+    let map = parse_map(input)?;
+    let start_nodes : Vec<&NodeId> = map.nodes.iter().map(|(name, _)| name).filter(|name| name.0.ends_with("A")).collect();
+    start_nodes.iter().map(|start_node| count_steps(&map, start_node)).reduce(|a, b| a.lcm(&b))
 }
 
 #[cfg(test)]
@@ -183,6 +195,25 @@ mod tests{
     fn test_follow_map(){
         let count = follow_map(INPUT).unwrap();
         assert_eq!(count, 2);
+    }
+
+    #[test]
+    fn test_follow_map_ghosts(){
+        const INPUT : &[u8] = indoc!{"
+            LR
+
+            11A = (11B, XXX)
+            11B = (XXX, 11Z)
+            11Z = (11B, XXX)
+            22A = (22B, XXX)
+            22B = (22C, 22C)
+            22C = (22Z, 22Z)
+            22Z = (22B, 22B)
+            XXX = (XXX, XXX)
+        "}.as_bytes();
+
+        let count = follow_map_ghost(INPUT).unwrap();
+        assert_eq!(count, 6);
     }
 
 }
