@@ -33,11 +33,11 @@ enum Card{
     A
 }
 
-fn card_order(card: Card, use_jokers: bool) -> u8{
+fn card_order<const USE_JOKERS: bool>(card: Card,) -> u8{
     use Card::*;
 
     match card{
-        J if use_jokers => 1,
+        J if USE_JOKERS => 1,
         Two => 2,
         Three => 3,
         Four  => 4,
@@ -109,12 +109,12 @@ impl std::fmt::Debug for Hand{
     }
 }
 
-fn classify_hand(hand: &Hand, use_jokers: bool) -> HandClassification{
+fn classify_hand<const USE_JOKERS: bool>(hand: &Hand) -> HandClassification{
     // Count unique cards in the hand
     let mut joker_count = 0;
     let mut counts = StackVec::<[(Card, u8); 5]>::new();
     for card in hand.0{
-        if card == Card::J && use_jokers{
+        if card == Card::J && USE_JOKERS{
             joker_count = joker_count + 1;
         } else if let Some(counter) = counts.iter_mut().find(|counter| counter.0 == card){
             counter.1 = counter.1 + 1;
@@ -179,33 +179,33 @@ fn parse_bids<R: std::io::BufRead>(input: R) -> Option<Vec<Bid>>{
     input.lines().map(|line| line.ok().and_then(|line| parse_bid(&line))).collect()
 }
 
-fn bid_compare_score(a: &(&Bid, HandClassification), b: &(&Bid, HandClassification), use_jokers: bool) -> std::cmp::Ordering{
+fn bid_compare_score<const USE_JOKERS: bool>(a: &(&Bid, HandClassification), b: &(&Bid, HandClassification)) -> std::cmp::Ordering{
     let classification_order = a.1.cmp(&b.1);
     if classification_order != Ordering::Equal{
         return classification_order;
     }
-    a.0.hand.0.map(|card| card_order(card, use_jokers)).cmp(&b.0.hand.0.map(|card| card_order(card, use_jokers)))
+    a.0.hand.0.map(|card| card_order::<USE_JOKERS>(card)).cmp(&b.0.hand.0.map(|card| card_order::<USE_JOKERS>(card)))
 }
 
-fn calculate_total_winnings<R: std::io::BufRead>(input: R, use_jokers: bool) -> Option<usize>{
+fn calculate_total_winnings<R: std::io::BufRead, const USE_JOKERS: bool>(input: R) -> Option<usize>{
     let bids = parse_bids(input)?;
 
     let classified_bids : Vec<(&Bid, HandClassification)>= bids.iter()
-        .map(|bid| (bid, classify_hand(&bid.hand, use_jokers)))
-        .sorted_by(|a, b| bid_compare_score(a, b, use_jokers))
+        .map(|bid| (bid, classify_hand::<USE_JOKERS>(&bid.hand)))
+        .sorted_by(bid_compare_score::<USE_JOKERS>)
         .collect();
     
-    Some(bids.iter().enumerate().map(|(rank, bid)| bid.bid * (rank + 1)).sum())
+    Some(classified_bids.iter().enumerate().map(|(rank, bid)| bid.0.bid * (rank + 1)).sum())
 }
 
 #[aoc_2023_markup::aoc_task(2023, 7, 1)]
 fn part1<R: std::io::BufRead>(input: R) -> Option<usize>{
-    calculate_total_winnings(input, false)
+    calculate_total_winnings::<_, false>(input)
 }
 
 #[aoc_2023_markup::aoc_task(2023, 7, 2)]
 fn part2<R: std::io::BufRead>(input: R) -> Option<usize>{
-    calculate_total_winnings(input, true)
+    calculate_total_winnings::<_,true>(input)
 }
 
 #[cfg(test)]
@@ -236,20 +236,20 @@ mod tests{
         let hand_one_pair : Hand = Hand::try_from_str("A23A4").unwrap();
         let hand_high_card : Hand = Hand::try_from_str("23456").unwrap();
 
-        assert_eq!(classify_hand(&hand_five_of_a_kind, false), HandClassification::FiveOfAKind);
-        assert_eq!(classify_hand(&hand_four_of_a_kind, false), HandClassification::FourOfAKind);
-        assert_eq!(classify_hand(&hand_full_house, false), HandClassification::FullHouse);
-        assert_eq!(classify_hand(&hand_three_of_a_kind, false), HandClassification::ThreeOfAKind);
-        assert_eq!(classify_hand(&hand_two_pair, false), HandClassification::TwoPair);
-        assert_eq!(classify_hand(&hand_one_pair, false), HandClassification::OnePair);
-        assert_eq!(classify_hand(&hand_high_card, false), HandClassification::HighCard);
+        assert_eq!(classify_hand::<false>(&hand_five_of_a_kind), HandClassification::FiveOfAKind);
+        assert_eq!(classify_hand::<false>(&hand_four_of_a_kind), HandClassification::FourOfAKind);
+        assert_eq!(classify_hand::<false>(&hand_full_house), HandClassification::FullHouse);
+        assert_eq!(classify_hand::<false>(&hand_three_of_a_kind), HandClassification::ThreeOfAKind);
+        assert_eq!(classify_hand::<false>(&hand_two_pair), HandClassification::TwoPair);
+        assert_eq!(classify_hand::<false>(&hand_one_pair), HandClassification::OnePair);
+        assert_eq!(classify_hand::<false>(&hand_high_card), HandClassification::HighCard);
     }
 
     #[test]
     fn test_classify_hand_jokers(){
-        assert_eq!(classify_hand(&Hand::try_from_str("T55J5").unwrap(), true), HandClassification::FourOfAKind);
-        assert_eq!(classify_hand(&Hand::try_from_str("KTJJT").unwrap(), true), HandClassification::FourOfAKind);
-        assert_eq!(classify_hand(&Hand::try_from_str("QQQJA").unwrap(), true), HandClassification::FourOfAKind);
+        assert_eq!(classify_hand::<true>(&Hand::try_from_str("T55J5").unwrap()), HandClassification::FourOfAKind);
+        assert_eq!(classify_hand::<true>(&Hand::try_from_str("KTJJT").unwrap()), HandClassification::FourOfAKind);
+        assert_eq!(classify_hand::<true>(&Hand::try_from_str("QQQJA").unwrap()), HandClassification::FourOfAKind);
     }
 
     const BIDS : &[u8] = indoc!{"
@@ -273,36 +273,14 @@ mod tests{
     }
 
     #[test]
-    fn test_rank_hands(){
-        let mut bids = parse_bids(BIDS).unwrap();
-        order_bids_by_rank(&mut bids, false);
-        assert_eq!(bids[0].hand, Hand::try_from_str("32T3K").unwrap());
-        assert_eq!(bids[1].hand, Hand::try_from_str("KTJJT").unwrap());
-        assert_eq!(bids[2].hand, Hand::try_from_str("KK677").unwrap());
-        assert_eq!(bids[3].hand, Hand::try_from_str("T55J5").unwrap());
-        assert_eq!(bids[4].hand, Hand::try_from_str("QQQJA").unwrap());
-    }
-
-    #[test]
-    fn test_rank_hands_with_jokers(){
-        let mut bids = parse_bids(BIDS).unwrap();
-        order_bids_by_rank(&mut bids, true);
-        assert_eq!(bids[0].hand, Hand::try_from_str("32T3K").unwrap());
-        assert_eq!(bids[1].hand, Hand::try_from_str("KK677").unwrap());
-        assert_eq!(bids[2].hand, Hand::try_from_str("T55J5").unwrap());
-        assert_eq!(bids[3].hand, Hand::try_from_str("QQQJA").unwrap());
-        assert_eq!(bids[4].hand, Hand::try_from_str("KTJJT").unwrap());
-    }
-
-    #[test]
     fn test_winnings(){
-        let winnings = calculate_total_winnings(BIDS, false).unwrap();
+        let winnings = calculate_total_winnings::<_, false>(BIDS).unwrap();
         assert_eq!(winnings, 6440);
     }
 
     #[test]
     fn test_winnings_with_jokers(){
-        let winnings = calculate_total_winnings(BIDS, true).unwrap();
+        let winnings = calculate_total_winnings::<_, true>(BIDS).unwrap();
         assert_eq!(winnings, 5905);
     }
 }
