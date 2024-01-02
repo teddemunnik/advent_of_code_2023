@@ -182,6 +182,7 @@ fn order_bids_by_rank(bids: &mut Vec<Bid>){
     bids.sort_by(|a, b| bid_compare_score(a, b))
 }
 
+#[aoc_2023_markup::aoc_task(2023, 7, 1)]
 fn calculate_total_winnings<R: std::io::BufRead>(input: R) -> Option<usize>{
     let mut bids = parse_bids(input)?;
     order_bids_by_rank(&mut bids);
