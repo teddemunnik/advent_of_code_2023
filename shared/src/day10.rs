@@ -1,5 +1,4 @@
 use std::collections::{BinaryHeap, HashSet};
-
 use itertools::Itertools;
 
 #[derive(PartialEq, Eq, Debug, Copy, Clone)]
@@ -13,6 +12,62 @@ enum PipeType {
     SE,
     Start,
     None,
+}
+
+impl PipeType{
+    /// Checks whether the given pipe type can potentially support a connection to a pipe in the given direction
+    fn can_connect_to_direction(self, direction: Direction) -> bool {
+        match self{
+            PipeType::NS => direction == Direction::Up || direction == Direction::Down,
+            PipeType::EW => direction == Direction::Left || direction == Direction::Right,
+            PipeType::NE => direction == Direction::Up || direction == Direction::Right,
+            PipeType::NW => direction == Direction::Up || direction == Direction::Left,
+            PipeType::SW => direction == Direction::Down || direction == Direction::Left,
+            PipeType::SE => direction == Direction::Down || direction == Direction::Right,
+            PipeType::Start => true,
+            PipeType::None => false,
+        }
+    }
+
+    /// Get a pipe that connects between two unqiue directions in a given tile
+    fn from_directions(a: Direction, b: Direction) -> PipeType {
+        assert_ne!(a, b);
+
+        use Direction::*;
+        match (a, b) {
+            (Up, Right) => PipeType::NE,
+            (Up, Down) => PipeType::NS,
+            (Up, Left) => PipeType::NW,
+            (Right, Up) => PipeType::NE,
+            (Right, Down) => PipeType::SE,
+            (Right, Left) => PipeType::EW,
+            (Down, Up) => PipeType::NS,
+            (Down, Right) => PipeType::SE,
+            (Down, Left) => PipeType::SW,
+            (Left, Up) => PipeType::NS,
+            (Left, Right) => PipeType::SE,
+            (Left, Down) => PipeType::SW,
+            _ => unreachable!(),
+        }
+    }
+}
+
+impl TryFrom<char> for PipeType{
+    type Error = String;
+
+    fn try_from(value: char) -> Result<Self, Self::Error> {
+        match value{
+            'S' => Ok(PipeType::Start),
+            '.' => Ok(PipeType::None),
+            '|' => Ok(PipeType::NS),
+            '-' => Ok(PipeType::EW),
+            'J' => Ok(PipeType::NW),
+            '7' => Ok(PipeType::SW),
+            'F' => Ok(PipeType::SE),
+            'L' => Ok(PipeType::NE),
+            _ => Err(format!("Unexpected char value {}", value))
+        }
+    }
 }
 
 #[derive(PartialEq, Eq, Debug, Copy, Clone)]
@@ -32,45 +87,20 @@ impl Direction {
             Direction::Right => Direction::Left,
         }
     }
-}
 
-fn has_connection(pipe: PipeType, direction: Direction) -> bool {
-    match pipe {
-        PipeType::NS => direction == Direction::Up || direction == Direction::Down,
-        PipeType::EW => direction == Direction::Left || direction == Direction::Right,
-        PipeType::NE => direction == Direction::Up || direction == Direction::Right,
-        PipeType::NW => direction == Direction::Up || direction == Direction::Left,
-        PipeType::SW => direction == Direction::Down || direction == Direction::Left,
-        PipeType::SE => direction == Direction::Down || direction == Direction::Right,
-        PipeType::Start => true,
-        PipeType::None => false,
+    /// Moves the cursor from passed into location a single tile in this direction
+    fn move_location(self, origin: (usize, usize)) -> (usize, usize) {
+        match self{
+            Direction::Up => (origin.0, origin.1 - 1),
+            Direction::Right => (origin.0 + 1, origin.1),
+            Direction::Down => (origin.0, origin.1 + 1),
+            Direction::Left => (origin.0 - 1, origin.1),
+        }
     }
 }
 
 fn connects(a: PipeType, b: PipeType, direction: Direction) -> bool {
-    has_connection(a, direction) && has_connection(b, direction.opposite())
-}
-
-/// Get a pipe that connects between two unqiue directions in a given tile
-fn get_matching_pipe(a: Direction, b: Direction) -> PipeType {
-    assert_ne!(a, b);
-
-    use Direction::*;
-    match (a, b) {
-        (Up, Right) => PipeType::NE,
-        (Up, Down) => PipeType::NS,
-        (Up, Left) => PipeType::NW,
-        (Right, Up) => PipeType::NE,
-        (Right, Down) => PipeType::SE,
-        (Right, Left) => PipeType::EW,
-        (Down, Up) => PipeType::NS,
-        (Down, Right) => PipeType::SE,
-        (Down, Left) => PipeType::SW,
-        (Left, Up) => PipeType::NS,
-        (Left, Right) => PipeType::SE,
-        (Left, Down) => PipeType::SW,
-        _ => unreachable!(),
-    }
+    a.can_connect_to_direction(direction) && b.can_connect_to_direction(direction.opposite())
 }
 
 struct ConnectionIterator<'a> {
@@ -142,33 +172,83 @@ impl<'a> Iterator for ConnectionIterator<'a> {
     }
 }
 
-fn find_connecting_pipes(
-    map: &Map,
-    location: (usize, usize),
-) -> impl Iterator<Item = Direction> + '_ {
-    ConnectionIterator {
-        map,
-        location,
-        direction: Some(Direction::Up),
-    }
+#[derive(PartialEq, Eq, Debug, Clone)]
+struct Map {
+    data: Vec<Vec<PipeType>>,
 }
 
-fn parse_pipe(item: char) -> Option<PipeType> {
-    match item {
-        'S' => Some(PipeType::Start),
-        '.' => Some(PipeType::None),
-        '|' => Some(PipeType::NS),
-        '-' => Some(PipeType::EW),
-        'J' => Some(PipeType::NW),
-        '7' => Some(PipeType::SW),
-        'F' => Some(PipeType::SE),
-        'L' => Some(PipeType::NE),
-        _ => None,
+impl Map{
+    /// Iterate between the connecting directions for a pipe in a given location
+    fn find_connecting_directions(
+        &self,
+        location: (usize, usize),
+    ) -> impl Iterator<Item = Direction> + '_ {
+        ConnectionIterator {
+            map: self,
+            location,
+            direction: Some(Direction::Up),
+        }
+    }
+
+    fn find_start(&self) -> Option<(usize, usize)> {
+        for y in 0..self.data.len() {
+            for x in 0..self.data[y].len() {
+                if self.data[y][x] == PipeType::Start {
+                    return Some((x, y));
+                }
+            }
+        }
+
+        None
+    }
+
+    fn get_pipes_in_loop(&self) -> HashSet<(usize, usize)>{
+        let mut visited = HashSet::new();
+        let start = self.find_start().unwrap();
+        let mut queue = Vec::new();
+        queue.push(start);
+        while let Some(item) = queue.pop() {
+            if !visited.insert(item) {
+                continue;
+            }
+
+            for direction in self.find_connecting_directions(item){
+                queue.push(direction.move_location(item))
+            }
+        }
+        visited
+    }
+
+    /// Gets a map with only pipes that are part of the loop.
+    /// Pipes not in the loop are replaced with ground
+    /// The start pipe is replaced with a it's infered pipe type
+    fn get_loop_map(&self) -> Map{
+        // Figure out which pipes are part of the loop containing the start
+        let pipes_in_loop = self.get_pipes_in_loop();
+
+        // Replace pipes that are not in the loops with ground
+        let mut map = self.clone();
+        for (y, row) in map.data.iter_mut().enumerate() {
+            for (x, value) in row.iter_mut().enumerate() {
+                if *value != PipeType::Start && *value != PipeType::None {
+                    if !pipes_in_loop.contains(&(x, y)) {
+                        *value = PipeType::None;
+                    }
+                }
+            }
+        }
+
+        // Replace start with a matching pipe type
+        let start = self.find_start().unwrap();
+        let (a, b) = map.find_connecting_directions(start).collect_tuple().unwrap();
+        map.data[start.1][start.0] = PipeType::from_directions(a, b);
+
+        map
     }
 }
 
 fn parse_line(line: &str) -> Option<Vec<PipeType>> {
-    line.chars().map(parse_pipe).collect()
+    line.chars().map(|item| item.try_into().ok()).collect()
 }
 
 fn parse_map<R: std::io::BufRead>(input: R) -> Option<Map> {
@@ -177,18 +257,6 @@ fn parse_map<R: std::io::BufRead>(input: R) -> Option<Map> {
         .map(|line| line.ok().and_then(|line| parse_line(&line)))
         .collect::<Option<_>>()?;
     Some(Map { data: lines })
-}
-
-fn find_start(map: &Map) -> Option<(usize, usize)> {
-    for y in 0..map.data.len() {
-        for x in 0..map.data[y].len() {
-            if map.data[y][x] == PipeType::Start {
-                return Some((x, y));
-            }
-        }
-    }
-
-    None
 }
 
 #[derive(Eq)]
@@ -215,17 +283,8 @@ impl PartialEq for QueuedPath {
     }
 }
 
-fn get_location(origin: (usize, usize), direction: Direction) -> (usize, usize) {
-    match direction {
-        Direction::Up => (origin.0, origin.1 - 1),
-        Direction::Right => (origin.0 + 1, origin.1),
-        Direction::Down => (origin.0, origin.1 + 1),
-        Direction::Left => (origin.0 - 1, origin.1),
-    }
-}
-
 fn find_furthest_pipe_from_start(map: &Map) -> usize {
-    let start = find_start(map).unwrap();
+    let start = map.find_start().unwrap();
     let mut visited = HashSet::new();
     let mut queue = BinaryHeap::new();
     let mut furthest_visited = 0;
@@ -242,8 +301,8 @@ fn find_furthest_pipe_from_start(map: &Map) -> usize {
         furthest_visited = furthest_visited.max(item.cost);
 
         // Visit connections
-        for direction in find_connecting_pipes(map, item.location) {
-            let connection = get_location(item.location, direction);
+        for direction in map.find_connecting_directions(item.location) {
+            let connection = direction.move_location(item.location);
             queue.push(QueuedPath {
                 location: connection,
                 cost: item.cost + 1,
@@ -254,41 +313,8 @@ fn find_furthest_pipe_from_start(map: &Map) -> usize {
     furthest_visited
 }
 
-fn get_cycle_map(map: &mut Map) {
-    // Figure out which pipes are part of the loop containing the start
-    let mut visited = HashSet::new();
-    let start = find_start(map).unwrap();
-    let mut queue = Vec::new();
-    queue.push(start);
-    while let Some(item) = queue.pop() {
-        if !visited.insert(item) {
-            continue;
-        }
-
-        for direction in find_connecting_pipes(map, item) {
-            queue.push(get_location(item, direction));
-        }
-    }
-
-    // Replace unvisited pipes with ground
-    for (y, row) in map.data.iter_mut().enumerate() {
-        for (x, value) in row.iter_mut().enumerate() {
-            if *value != PipeType::Start && *value != PipeType::None {
-                if !visited.contains(&(x, y)) {
-                    *value = PipeType::None;
-                }
-            }
-        }
-    }
-
-    // Replace start with a matching pipe type
-    let (a, b) = find_connecting_pipes(map, start).collect_tuple().unwrap();
-    map.data[start.1][start.0] = get_matching_pipe(a, b);
-}
-
-fn count_inside_loop(map: &mut Map) -> usize {
-    // Get a map with just the loop
-    get_cycle_map(map);
+fn count_inside_loop(map: &Map) -> usize {
+    let map = map.get_loop_map();
 
     let mut count = 0;
     for y in 0..map.data.len() {
@@ -328,11 +354,6 @@ fn part1<R: std::io::BufRead>(input: R) -> Option<usize> {
 fn part2<R: std::io::BufRead>(input: R) -> Option<usize> {
     let mut map = parse_map(input)?;
     Some(count_inside_loop(&mut map))
-}
-
-#[derive(PartialEq, Eq, Debug)]
-struct Map {
-    data: Vec<Vec<PipeType>>,
 }
 
 #[cfg(test)]
@@ -394,16 +415,16 @@ mod tests {
     }
 
     #[test]
-    fn test_find_connecting_pipes() {
+    fn test_find_connecting_directions() {
         let map = parse_map(INPUT).unwrap();
 
         itertools::assert_equal(
-            find_connecting_pipes(&map, (1, 1)),
+            map.find_connecting_directions((1, 1)),
             [Direction::Right, Direction::Down],
         );
 
         itertools::assert_equal(
-            find_connecting_pipes(&map, (2, 3)),
+            map.find_connecting_directions((2, 3)),
             [Direction::Right, Direction::Left],
         );
     }
