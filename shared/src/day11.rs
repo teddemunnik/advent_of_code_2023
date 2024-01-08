@@ -1,3 +1,5 @@
+use std::io::empty;
+
 
 
 struct Map{
@@ -27,7 +29,7 @@ fn parse_map<R: std::io::BufRead>(input: R) -> Option<Map>{
     Some(Map{ galaxies })
 }
 
-fn cosmic_expansion(input: &Map) -> Map{
+fn cosmic_expansion(input: &Map, empty_scale: usize) -> Map{
     let (max_x, max_y) = match input.galaxies.iter().copied().reduce(|a, b| (a.0.max(b.0), a.1.max(b.1))){
         Some(a) => a,
         None => return Map::empty(),
@@ -44,12 +46,12 @@ fn cosmic_expansion(input: &Map) -> Map{
     // Accumulate an offset for each row and cooumn
     let row_offset : Vec<usize> = row_has_galaxy.iter().scan(0, |state, value| {
         let state_before = *state;
-        if !value{ *state += 2; } else { *state += 1; }
+        if !value{ *state += empty_scale; } else { *state += 1; }
         Some(state_before)
     }).collect();
     let column_offset : Vec<usize> = column_has_galaxy.iter().scan(0, |state, value| {
         let state_before = *state;
-        if !value{ *state += 2; } else { *state += 1; }
+        if !value{ *state += empty_scale; } else { *state += 1; }
         Some(state_before)
     }).collect();
 
@@ -72,7 +74,13 @@ fn sum_shortest_paths(map: &Map) -> usize{
 
 #[aoc_2023_markup::aoc_task(2023, 11, 1)]
 fn part1<R: std::io::BufRead>(input: R) -> Option<usize>{
-    let map = cosmic_expansion(&parse_map(input)?);
+    let map = cosmic_expansion(&parse_map(input)?, 2);
+    Some(sum_shortest_paths(&map))
+}
+
+#[aoc_2023_markup::aoc_task(2023, 11, 2)]
+fn part2<R: std::io::BufRead>(input: R) -> Option<usize>{
+    let map = cosmic_expansion(&parse_map(input)?, 1000000);
     Some(sum_shortest_paths(&map))
 }
 
@@ -113,7 +121,7 @@ mod tests{
     #[test]
     fn test_cosmic_expansion(){
         let map = parse_map(INPUT).unwrap();
-        let map = cosmic_expansion(&map);
+        let map = cosmic_expansion(&map, 2);
         assert_eq!(map.galaxies, [
             (4, 0),
             (9, 1),
@@ -129,7 +137,7 @@ mod tests{
 
     #[test]
     fn test_sum_shortest_path(){
-        let map = cosmic_expansion(&parse_map(INPUT).unwrap());
+        let map = cosmic_expansion(&parse_map(INPUT).unwrap(), 2);
         let result = sum_shortest_paths(&map);
         assert_eq!(result, 374);
     }
