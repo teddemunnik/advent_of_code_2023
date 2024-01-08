@@ -12,6 +12,7 @@ mod day7;
 mod day8;
 mod day9;
 mod day10;
+mod day11;
 
 pub trait AocTask{
     fn year(&self) -> u32;
